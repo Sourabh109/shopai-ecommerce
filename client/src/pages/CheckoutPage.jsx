@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { FiLock, FiArrowLeft } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51ToRRsLDCwgBOCHZmKSaO8gW1BWKnHKzHUPREDPkZ9J860UHijAYdSEZvG2aN3NLAvOVeWOPYNTqhl95tfIiI6ds00UfKxRV0C');
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
