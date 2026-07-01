@@ -2,7 +2,15 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Cart = require('../models/Cart');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Lazy Stripe initialization — prevents crash if key is missing/invalid at startup
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_your_stripe_secret_key_here') {
+    throw new Error('Stripe is not configured. Please add STRIPE_SECRET_KEY to environment variables.');
+  }
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+};
+
 
 // @desc    Create Stripe Payment Intent
 // @route   POST /api/orders/payment-intent
@@ -27,7 +35,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   const taxPrice = total * 0.08;
   const totalAmount = Math.round((total + shippingPrice + taxPrice) * 100); // in cents
 
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount: totalAmount,
     currency: 'usd',
     automatic_payment_methods: { enabled: true },
