@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://shopai-ecommerce-production.up.railway.app/api';
+// Hardcoded Railway URL — no env var dependency
+const API_URL = 'https://shopai-ecommerce-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -32,6 +33,8 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         localStorage.removeItem('accessToken');
+        const msg = error.response?.data?.message || error.message || 'Session expired';
+        console.error(msg);
         window.location.href = '/login';
       }
     }
