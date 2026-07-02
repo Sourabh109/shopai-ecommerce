@@ -28,8 +28,7 @@ const corsOptions = {
   exposedHeaders: ['Set-Cookie'],
 };
 
-// Handle OPTIONS preflight for ALL routes
-app.options('*', cors(corsOptions));
+// cors() middleware automatically handles OPTIONS preflight
 app.use(cors(corsOptions));
 
 // ─── Helmet (after CORS, cross-origin policies disabled) ─────────────────────
