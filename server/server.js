@@ -13,48 +13,48 @@ connectDB();
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
-
-// CORS — must be FIRST before rate limiter so headers are always set
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
-app.use(cors({
+// ─── CORS must be absolutely first ───────────────────────────────────────────
+const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
+    if (origin.startsWith('http://localhost')) return callback(null, true);
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return callback(null, true);
+    return callback(new Error(`CORS: ${origin} not allowed`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie'],
+};
+
+// Handle OPTIONS preflight for ALL routes
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+
+// ─── Helmet (after CORS, cross-origin policies disabled) ─────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
 }));
 
-// Rate limiting (after CORS so preflight always gets CORS headers)
+// ─── Rate limiting ────────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again later',
+  message: 'Too many requests, please try again later',
 });
 app.use('/api/auth', limiter);
 
-// Body parsers
+// ─── Body parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Logger (dev only)
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
+if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
-// Routes
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
@@ -67,12 +67,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
 });
 
-// 404 handler
+// 404
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
-// Error handler (must be last)
+// Error handler
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
