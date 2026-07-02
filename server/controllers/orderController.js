@@ -66,7 +66,8 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   // Verify payment with Stripe
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const stripeClient = getStripe();
+  const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
   if (paymentIntent.status !== 'succeeded') {
     res.status(400);
     throw new Error('Payment not completed');
