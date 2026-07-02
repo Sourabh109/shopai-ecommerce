@@ -10,18 +10,14 @@ const generateRefreshToken = (id) =>
   jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d' });
 
 const setCookies = (res, accessToken, refreshToken) => {
-  res.cookie('accessToken', accessToken, {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieOpts = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60 * 1000,
-  });
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'strict', // 'none' required for cross-domain in production
+  };
+  res.cookie('accessToken', accessToken, { ...cookieOpts, maxAge: 15 * 60 * 1000 });
+  res.cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
 };
 
 // @desc    Register new user

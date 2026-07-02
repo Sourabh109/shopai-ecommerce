@@ -16,15 +16,7 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: 'Too many requests from this IP, please try again later',
-});
-app.use('/api/auth', limiter);
-
-// CORS — allow localhost in dev and Vercel URL in production
+// CORS — must be FIRST before rate limiter so headers are always set
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
@@ -33,7 +25,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       return callback(null, true);
@@ -44,6 +35,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Rate limiting (after CORS so preflight always gets CORS headers)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again later',
+});
+app.use('/api/auth', limiter);
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
